@@ -4,4 +4,4 @@ package p2p
 type HandshakeFunc func(Peer) error
 
 // No handshake would be done
-func NOPHandshakeFunc(Peer) error { return nil }
+func DefaultHandshakeFunc(Peer) error { return nil }
