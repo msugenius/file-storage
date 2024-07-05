@@ -1,32 +1,35 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"time"
 
 	"github.com/msugenius/file-storage/p2p"
 )
 
 func main() {
-	tcpOpts := p2p.TCPTransportsOpts{
+	tcpTransportOpts := p2p.TCPTransportOpts{
 		ListenAddr:    ":3000",
-		HandshakeFunc: p2p.DefaultHandshakeFunc,
 		Decoder:       p2p.DefaultDecoder{},
+		HandshakeFunc: p2p.DefaultHandshakeFunc,
 		OnPeer:        p2p.DefaultOnPeer,
 	}
+	tcpTransport := p2p.NewTCPTransport(tcpTransportOpts)
 
-	tr := p2p.NewTCPTransport(tcpOpts)
-
-	go func() {
-		for {
-			msg := <-tr.Consume()
-			fmt.Printf("%+v\n", msg)
-		}
-	}()
-
-	if err := tr.ListenAndAccept(); err != nil {
-		log.Fatal(err)
+	fileServerOpts := FileServerOpts{
+		StorageRoot:       "data",
+		PathTransformFunc: CASPathTransformFunc,
+		Transport:         tcpTransport,
 	}
 
-	select {}
+	s := NewFileServer(fileServerOpts)
+
+	go func() {
+		time.Sleep(time.Second * 3)
+		s.Stop()
+	}()
+
+	if err := s.Start(); err != nil {
+		log.Fatal(err)
+	}
 }
