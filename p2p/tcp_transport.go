@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"sync"
 )
@@ -27,7 +28,7 @@ func (p *TCPPeer) Close() error {
 	return p.conn.Close()
 }
 
-type TCPTransportsOpts struct {
+type TCPTransportOpts struct {
 	ListenAddr    string
 	HandshakeFunc HandshakeFunc
 	Decoder       Decoder
@@ -35,12 +36,12 @@ type TCPTransportsOpts struct {
 }
 
 func DefaultOnPeer(Peer Peer) error {
-	Peer.Close()
+	fmt.Println("[TCP] on peer")
 	return nil
 }
 
 type TCPTransport struct {
-	TCPTransportsOpts
+	TCPTransportOpts
 	listener net.Listener
 	rpcch    chan RPC
 
@@ -48,10 +49,10 @@ type TCPTransport struct {
 	peers    map[net.Addr]Peer
 }
 
-func NewTCPTransport(opts TCPTransportsOpts) *TCPTransport {
+func NewTCPTransport(opts TCPTransportOpts) *TCPTransport {
 	return &TCPTransport{
-		TCPTransportsOpts: opts,
-		rpcch:             make(chan RPC),
+		TCPTransportOpts: opts,
+		rpcch:            make(chan RPC),
 	}
 }
 
@@ -59,7 +60,13 @@ func NewTCPTransport(opts TCPTransportsOpts) *TCPTransport {
 // return read-only channel for reading the incoming
 // messages recieved from another peer
 func (t *TCPTransport) Consume() <-chan RPC {
+	fmt.Println("transport channel consumed")
 	return t.rpcch
+}
+
+// CLose implemetns the Transport interface.
+func (t *TCPTransport) Close() error {
+	return t.listener.Close()
 }
 
 func (t *TCPTransport) ListenAndAccept() error {
@@ -71,6 +78,8 @@ func (t *TCPTransport) ListenAndAccept() error {
 	}
 
 	go t.startAcceptLoop()
+
+	log.Printf("TCP transport listening on %s\n", t.ListenAddr)
 
 	return nil
 }
